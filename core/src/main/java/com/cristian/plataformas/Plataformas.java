@@ -3,6 +3,7 @@ package com.cristian.plataformas;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
@@ -11,34 +12,47 @@ import com.badlogic.gdx.utils.ScreenUtils;
 public class Plataformas extends ApplicationAdapter {
 
     private ShapeRenderer shapeRenderer;
+    private OrthographicCamera camera;
 
-    // Jugador
+    //Jugador
     private Rectangle player;
     private float velX, velY;
     private boolean onGround = false;
 
-    // Plataformas
+    //Plataformas
     private Array<Rectangle> platforms;
 
-    // Constantes
+    //Constantes
     private static final float SPEED     = 200f;
     private static final float GRAVITY   = -600f;
     private static final float JUMP_FORCE = 400f;
     private static final float GROUND_Y  = 50f;
 
+    //Tamaño del mundo
+    private static final float WORLD_WIDTH = 1600f;
+    private static final float WORLD_HEIGHT = 600f;
+
     @Override
     public void create() {
         shapeRenderer = new ShapeRenderer();
+
+        //Camara
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         //Jugador: x, y, ancho, alto
         player = new Rectangle(100, GROUND_Y, 40, 60);
 
         //Crear plataformas
         platforms = new Array<>();
-        platforms.add(new Rectangle(200, 150, 150, 20));
-        platforms.add(new Rectangle(450, 250, 150, 20));
-        platforms.add(new Rectangle(150, 350, 150, 20));
-        platforms.add(new Rectangle(500, 420, 120, 20));
+        platforms.add(new Rectangle(200,  150, 150, 20));
+        platforms.add(new Rectangle(450,  250, 150, 20));
+        platforms.add(new Rectangle(150,  350, 150, 20));
+        platforms.add(new Rectangle(500,  420, 120, 20));
+        platforms.add(new Rectangle(700,  180, 160, 20));
+        platforms.add(new Rectangle(900,  300, 150, 20));
+        platforms.add(new Rectangle(1100, 200, 180, 20));
+        platforms.add(new Rectangle(1300, 350, 150, 20));
     }
 
     @Override
@@ -57,8 +71,9 @@ public class Plataformas extends ApplicationAdapter {
         // --- FÍSICA ---
         velY += GRAVITY * delta;
 
-        //Mover en X y revisar colisión horizontal
+        //Mover en X
         player.x += velX * delta;
+        player.x = Math.max(0, Math.min(player.x, WORLD_WIDTH - player.width));
         for (Rectangle platform : platforms) {
             if (player.overlaps(platform)) {
                 if (velX > 0) player.x = platform.x - player.width;
@@ -67,7 +82,7 @@ public class Plataformas extends ApplicationAdapter {
             }
         }
 
-        //Mover en Y y revisar colisión vertical
+        //Mover en Y
         player.y += velY * delta;
         onGround = false;
 
@@ -94,8 +109,22 @@ public class Plataformas extends ApplicationAdapter {
             }
         }
 
+        // --- CAMARA ---
+        float camX = player.x + player.width / 2f;
+        float camY = player.y + player.height / 2f;
+
+        //Limitar la camara a los bordes del mundo
+        float halfW = camera.viewportWidth / 2f;
+        float halfH = camera.viewportHeight / 2f;
+        camX = Math.max(halfW, Math.min(camX, WORLD_WIDTH - halfW));
+        camY = Math.max(halfH, Math.min(camY, WORLD_HEIGHT - halfH));
+
+        camera.position.set(camX, camY, 0);
+        camera.update();
+
         // --- RENDER ---
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+        shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         //Suelo
